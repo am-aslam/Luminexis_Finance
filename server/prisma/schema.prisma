@@ -1,0 +1,111 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id            String                @id @default(cuid())
+  name          String
+  email         String                @unique
+  password      String
+  role          String                @default("FOUNDER") // FOUNDER, CO_FOUNDER, ADMIN
+  createdAt     DateTime              @default(now())
+  deletedAt     DateTime?
+  expenses      Expense[]
+  incomes       Income[]
+  contributions CapitalContribution[]
+}
+
+model Expense {
+  id            String        @id @default(cuid())
+  date          DateTime
+  category      String
+  vendorId      String?
+  vendor        Vendor?       @relation(fields: [vendorId], references: [id])
+  description   String
+  baseAmount    Decimal
+  gstPercent    Decimal       @default(0)
+  gstAmount     Decimal       // computed on save
+  totalAmount   Decimal       // computed on save
+  paymentMethod String        // UPI, BANK_TRANSFER, CASH, CARD
+  status        String        @default("PAID") // PAID, PENDING, FAILED, COMPLETED
+  paidById      String
+  paidBy        User          @relation(fields: [paidById], references: [id])
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  deletedAt     DateTime?
+}
+
+model Income {
+  id            String        @id @default(cuid())
+  date          DateTime
+  category      String
+  description   String
+  totalAmount   Decimal
+  paymentMethod String        // UPI, BANK_TRANSFER, CASH, CARD
+  status        String        @default("COMPLETED")
+  paidById      String
+  paidBy        User          @relation(fields: [paidById], references: [id])
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  deletedAt     DateTime?
+}
+
+model CapitalContribution {
+  id            String        @id @default(cuid())
+  date          DateTime
+  contributorId String
+  contributor   User          @relation(fields: [contributorId], references: [id])
+  description   String
+  amount        Decimal
+  paymentMethod String        // UPI, BANK_TRANSFER, CASH, CARD
+  createdAt     DateTime      @default(now())
+  deletedAt     DateTime?
+}
+
+model BankTransaction {
+  id               String          @id @default(cuid())
+  date             DateTime
+  type             String          // CAPITAL, EXPENSE, INCOME, TRANSFER
+  reference        String?
+  description      String
+  debit            Decimal         @default(0)
+  credit           Decimal         @default(0)
+  balance          Decimal         // running balance
+  relatedExpenseId String?
+  relatedIncomeId  String?
+  createdAt        DateTime        @default(now())
+}
+
+model Vendor {
+  id            String    @id @default(cuid())
+  name          String
+  contactPerson String?
+  email         String?
+  phone         String?
+  category      String?
+  notes         String?
+  expenses      Expense[]
+  createdAt     DateTime  @default(now())
+  deletedAt     DateTime?
+}
+
+model Category {
+  id    String       @id @default(cuid())
+  name  String       @unique
+  type  String       // EXPENSE, INCOME
+}
+
+model Invitation {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  token     String   @unique
+  role      String   @default("CO_FOUNDER")
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}

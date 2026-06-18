@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --lx-black: #000000;
+  --lx-surface: #0D0D0D;
+  --lx-surface-2: #111111;
+  --lx-green: #057732;
+  --lx-green-dark: #033C1F;
+  --lx-green-mid: #068F3A;
+  --lx-green-glow: #04A847;
+  --lx-white: #FFFFFF;
+  --lx-muted: #888888;
+  --lx-border: #1C1C1C;
+  --lx-red: #E53E3E;
+  --lx-amber: #D97706;
+}
+
+/* Scrollbar customizations */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: #000000;
+}
+::-webkit-scrollbar-thumb {
+  background: #1C1C1C;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #057732;
+}
+
+body {
+  background-color: #000000;
+  color: #FFFFFF;
+  font-family: 'Oxanium', sans-serif;
+}
+
+.brand-logo {
+  font-family: 'Audiowide', sans-serif;
+}
+
+/* Magazine-style editorial headers */
+.editorial-label {
+  font-family: 'Oxanium', sans-serif;
+  font-weight: 300; /* Oxanium Light */
+  font-size: 10px;
+  color: #057732;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+}
+
+/* Custom list row hover effect */
+.lx-row-hover {
+  border-left: 1px solid transparent;
+  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.lx-row-hover:hover {
+  border-left-color: #057732;
+  transform: translateX(4px);
+}
+
+/* Number ticker animation rules */
+@keyframes slideUp {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 600ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
