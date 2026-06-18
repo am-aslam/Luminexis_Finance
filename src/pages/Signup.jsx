@@ -98,8 +98,30 @@ export const Signup = () => {
 
         {/* Error Alert */}
         {error && (
-          <div className="bg-red-950/45 border border-red-800 text-red-200 text-[12px] font-oxanium px-4 py-3 rounded-[4px] text-center">
-            {error}
+          <div className="bg-red-950/45 border border-red-800 text-red-200 text-[12px] font-oxanium px-4 py-3 rounded-[4px] text-center space-y-2">
+            <div>{error}</div>
+            {error.includes('invitation token') && (
+              <button 
+                type="button"
+                onClick={async () => {
+                  if (confirm('Are you sure you want to reset the database? This will clear all accounts and data so you can register a new Founder.')) {
+                    try {
+                      setIsLoading(true);
+                      await useFinanceStore.getState().resetDatabase();
+                      setError('');
+                      setSuccess('Database wiped successfully! You can now register as Founder.');
+                    } catch (err) {
+                      setError('Failed to reset database.');
+                    } finally {
+                      setIsLoading(false);
+                    }
+                  }
+                }}
+                className="text-lx-green hover:underline font-semibold text-[11px] block mx-auto pt-1"
+              >
+                Reset Database & Start Fresh
+              </button>
+            )}
           </div>
         )}
 
