@@ -223,14 +223,16 @@ export const useFinanceStore = create((set, get) => ({
 
   fetchLedger: async () => {
     try {
-      const json = await apiRequest('/ledger?page=1&limit=1000');
+      const json = await apiRequest('/ledger/bank?page=1&limit=1000');
       const mapped = json.data.map(item => ({
         id: item.id,
         date: item.date.split('T')[0],
-        type: item.type === 'EXPENSE' ? 'debit' : 'credit',
+        type: item.type === 'EXPENSE' || Number(item.debit) > 0 ? 'debit' : 'credit',
         description: item.description,
-        amount: Number(item.type === 'EXPENSE' ? item.debit : item.credit),
-        balance: Number(item.balance)
+        amount: Number(Number(item.debit) > 0 ? item.debit : item.credit),
+        balance: Number(item.balance),
+        debit: Number(item.debit || 0),
+        credit: Number(item.credit || 0)
       }));
       set({ ledger: mapped });
     } catch (e) {
