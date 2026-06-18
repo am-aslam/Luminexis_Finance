@@ -455,6 +455,21 @@ export const useFinanceStore = create((set, get) => ({
     await get().fetchLedger();
   },
 
+  updateCapital: async (id, updated) => {
+    await apiRequest(`/capital/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        date: updated.date ? new Date(updated.date).toISOString() : undefined,
+        description: updated.description,
+        amount: updated.amount !== undefined ? Number(updated.amount) : undefined,
+        paymentMethod: updated.paymentMethod ? mapPaymentMethodToDB(updated.paymentMethod) : undefined
+      })
+    });
+    await get().fetchCapital();
+    await get().fetchSummary();
+    await get().fetchLedger();
+  },
+
   inviteCoFounder: async (email) => {
     const json = await apiRequest('/invitations', {
       method: 'POST',
