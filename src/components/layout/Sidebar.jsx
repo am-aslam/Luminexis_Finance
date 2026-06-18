@@ -9,6 +9,7 @@ import {
   FileText, 
   Users, 
   LogOut,
+  X,
   Settings as SettingsIcon 
 } from 'lucide-react';
 import logoPng from '../../assets/PNG Logo.png';
@@ -25,7 +26,7 @@ const navItems = [
   { path: '/settings', label: 'Settings', icon: SettingsIcon },
 ];
 
-export const Sidebar = () => {
+export const Sidebar = ({ isOpen, onClose }) => {
   const user = useFinanceStore(state => state.user);
   const logout = useFinanceStore(state => state.logout);
 
@@ -41,15 +42,28 @@ export const Sidebar = () => {
   };
 
   return (
-    <aside className="w-[220px] h-screen bg-lx-green-dark border-r border-lx-border flex flex-col justify-between select-none shrink-0 z-30">
+    <aside className={`
+      fixed md:static inset-y-0 left-0 w-[220px] h-screen bg-lx-green-dark border-r border-lx-border flex flex-col justify-between select-none shrink-0 z-50 transition-transform duration-200 ease-in-out
+      ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+    `}>
       {/* Top Logo Section */}
       <div className="flex flex-col">
-        <div className="pt-[32px] pb-[16px] px-6 flex items-center gap-3">
-          {/* Logo Mark: Custom PNG Logo */}
-          <img src={logoPng} alt="Luminexis Logo" className="w-[24px] h-[24px] object-contain" />
-          <span className="brand-logo text-[15px] font-normal tracking-[0.05em] text-lx-white select-none">
-            LUMINEXIS
-          </span>
+        <div className="pt-[32px] pb-[16px] px-6 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            {/* Logo Mark: Custom PNG Logo */}
+            <img src={logoPng} alt="Luminexis Logo" className="w-[24px] h-[24px] object-contain" />
+            <span className="brand-logo text-[15px] font-normal tracking-[0.05em] text-lx-white select-none">
+              LUMINEXIS
+            </span>
+          </div>
+          {/* Mobile close button */}
+          <button 
+            onClick={onClose}
+            className="md:hidden text-lx-muted hover:text-lx-white transition-colors p-1"
+            aria-label="Close navigation menu"
+          >
+            <X size={18} />
+          </button>
         </div>
         
         {/* Thin divider */}
@@ -63,6 +77,7 @@ export const Sidebar = () => {
               <NavLink
                 key={item.path}
                 to={item.path}
+                onClick={onClose}
                 style={{ animationDelay: `${index * 30}ms` }}
                 className={({ isActive }) => `
                   flex items-center gap-3 py-[10px] px-[24px] text-[13px] font-medium tracking-[0.02em]
@@ -109,3 +124,4 @@ export const Sidebar = () => {
     </aside>
   );
 };
+

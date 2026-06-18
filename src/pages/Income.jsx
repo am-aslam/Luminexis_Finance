@@ -60,30 +60,32 @@ export const Income = () => {
           </span>
           
           <div className="border border-lx-border rounded-[8px] bg-lx-surface overflow-hidden">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-lx-border">
-                  <th className="py-4 px-6 text-[10px] font-light tracking-[0.12em] text-lx-green uppercase">Date</th>
-                  <th className="py-4 px-6 text-[10px] font-light tracking-[0.12em] text-lx-green uppercase">Source</th>
-                  <th className="py-4 px-6 text-[10px] font-light tracking-[0.12em] text-lx-green uppercase">Method</th>
-                  <th className="py-4 px-6 text-[10px] font-light tracking-[0.12em] text-lx-green uppercase text-right">Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {income.map((inc) => (
-                  <tr key={inc.id} className="border-b border-lx-border/40 hover:bg-lx-surface-2 transition-colors">
-                    <td className="py-4 px-6 text-[13px] text-lx-muted font-oxanium">{formatDate(inc.date)}</td>
-                    <td className="py-4 px-6 text-[13px] text-lx-white font-oxanium font-medium">
-                      {inc.source} <span className="text-[11px] text-lx-muted font-light">({inc.description})</span>
-                    </td>
-                    <td className="py-4 px-6 text-[13px] text-lx-muted font-oxanium">{inc.paymentMethod}</td>
-                    <td className="py-4 px-6 text-[13px] font-semibold text-right text-lx-green-glow font-oxanium">
-                      {formatCurrency(inc.amount)}
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-lx-border">
+                    <th className="py-4 px-6 text-[10px] font-light tracking-[0.12em] text-lx-green uppercase">Date</th>
+                    <th className="py-4 px-6 text-[10px] font-light tracking-[0.12em] text-lx-green uppercase">Source</th>
+                    <th className="py-4 px-6 text-[10px] font-light tracking-[0.12em] text-lx-green uppercase">Method</th>
+                    <th className="py-4 px-6 text-[10px] font-light tracking-[0.12em] text-lx-green uppercase text-right">Amount</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {income.map((inc) => (
+                    <tr key={inc.id} className="border-b border-lx-border/40 hover:bg-lx-surface-2 transition-colors">
+                      <td className="py-4 px-6 text-[13px] text-lx-muted font-oxanium">{formatDate(inc.date)}</td>
+                      <td className="py-4 px-6 text-[13px] text-lx-white font-oxanium font-medium">
+                        {inc.source} <span className="text-[11px] text-lx-muted font-light">({inc.description})</span>
+                      </td>
+                      <td className="py-4 px-6 text-[13px] text-lx-muted font-oxanium">{inc.paymentMethod}</td>
+                      <td className="py-4 px-6 text-[13px] font-semibold text-right text-lx-green-glow font-oxanium">
+                        {formatCurrency(inc.amount)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 

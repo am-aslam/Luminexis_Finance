@@ -139,9 +139,9 @@ export const Settings = () => {
             {success && <div className="text-lx-green-glow text-[11px] font-oxanium">{success}</div>}
 
             {/* Invite Form */}
-            <form onSubmit={handleInvite} className="flex gap-3">
+            <form onSubmit={handleInvite} className="flex flex-col sm:flex-row gap-3">
               <div className="relative flex-1">
-                <Mail className="absolute left-3.5 top-3 w-4 h-4 text-lx-muted" />
+                <Mail className="absolute left-3.5 top-3.5 w-4 h-4 text-lx-muted" />
                 <input
                   type="email"
                   required
@@ -149,7 +149,7 @@ export const Settings = () => {
                   placeholder="co-founder@luminexis.com"
                   value={inviteEmail}
                   onChange={(e) => setInviteEmail(e.target.value)}
-                  className="bg-lx-surface-2 border border-lx-border focus:border-lx-green rounded-[4px] pl-10 pr-3.5 py-2 text-[13px] text-lx-white font-oxanium outline-none transition-colors w-full disabled:opacity-50"
+                  className="bg-lx-surface-2 border border-lx-border focus:border-lx-green rounded-[4px] pl-10 pr-3.5 py-3 text-[13px] text-lx-white font-oxanium outline-none transition-colors w-full disabled:opacity-50"
                 />
               </div>
 
@@ -157,7 +157,7 @@ export const Settings = () => {
                 value={inviteRole}
                 disabled={isLoading}
                 onChange={(e) => setInviteRole(e.target.value)}
-                className="bg-lx-surface-2 border border-lx-border focus:border-lx-green rounded-[4px] px-3.5 text-[12px] text-lx-white font-oxanium outline-none cursor-pointer disabled:opacity-50"
+                className="bg-lx-surface-2 border border-lx-border focus:border-lx-green rounded-[4px] px-3.5 py-3 text-[12px] text-lx-white font-oxanium outline-none cursor-pointer disabled:opacity-50"
               >
                 <option value="CO_FOUNDER">Co-founder</option>
                 <option value="ADMIN">Administrator</option>
@@ -166,7 +166,7 @@ export const Settings = () => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="bg-lx-green hover:bg-lx-green-mid text-white rounded-[4px] px-4 text-[12px] font-semibold transition-colors disabled:opacity-50"
+                className="bg-lx-green hover:bg-lx-green-mid text-white rounded-[4px] px-4 py-3 text-[12px] font-semibold transition-colors disabled:opacity-50"
               >
                 {isLoading ? 'Sending...' : 'Send Invite'}
               </button>
@@ -183,7 +183,7 @@ export const Settings = () => {
                   {invitations.map((invite) => (
                     <div 
                       key={invite.id} 
-                      className="flex items-center justify-between p-3 bg-lx-surface-2 rounded-[4px] border border-lx-border"
+                      className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-lx-surface-2 rounded-[4px] border border-lx-border gap-3"
                     >
                       <div className="flex flex-col">
                         <span className="text-[12px] text-lx-white font-medium font-oxanium leading-tight">
@@ -194,7 +194,7 @@ export const Settings = () => {
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 self-end sm:self-auto">
                         <button
                           type="button"
                           onClick={() => handleCopyLink(invite)}
@@ -228,7 +228,7 @@ export const Settings = () => {
             Corporate Ledger Settings
           </span>
 
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="flex flex-col gap-1">
               <span className="text-[11px] text-lx-muted uppercase tracking-wider">Company Name</span>
               <span className="text-[13px] text-lx-white font-medium font-oxanium">Luminexis Technologies Private Limited</span>

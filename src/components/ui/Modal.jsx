@@ -89,7 +89,7 @@ export const Modal = ({ isOpen, onClose, expenseToEdit, onSave }) => {
     <div className="fixed inset-0 bg-black/85 flex items-center justify-center z-50 p-4">
       {/* Modal Card */}
       <div 
-        className="w-full max-w-[520px] bg-lx-surface border-t-2 border-t-lx-green border-x border-b border-lx-border rounded-[8px] overflow-hidden flex flex-col relative animate-slide-up"
+        className="w-full max-w-[520px] max-h-[90vh] overflow-y-auto bg-lx-surface border-t-2 border-t-lx-green border-x border-b border-lx-border rounded-[8px] flex flex-col relative animate-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

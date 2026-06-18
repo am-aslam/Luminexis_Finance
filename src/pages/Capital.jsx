@@ -57,28 +57,30 @@ export const Capital = () => {
           </span>
 
           <div className="border border-lx-border rounded-[8px] bg-lx-surface overflow-hidden">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-lx-border">
-                  <th className="py-4 px-6 text-[10px] font-light tracking-[0.12em] text-lx-green uppercase">Date</th>
-                  <th className="py-4 px-6 text-[10px] font-light tracking-[0.12em] text-lx-green uppercase">Source Type</th>
-                  <th className="py-4 px-6 text-[10px] font-light tracking-[0.12em] text-lx-green uppercase">Detail Description</th>
-                  <th className="py-4 px-6 text-[10px] font-light tracking-[0.12em] text-lx-green uppercase text-right">Inflow</th>
-                </tr>
-              </thead>
-              <tbody>
-                {capital.map((item) => (
-                  <tr key={item.id} className="border-b border-lx-border/40 hover:bg-lx-surface-2 transition-colors">
-                    <td className="py-4 px-6 text-[13px] text-lx-muted font-oxanium">{formatDate(item.date)}</td>
-                    <td className="py-4 px-6 text-[13px] text-lx-white font-oxanium font-medium">{item.source}</td>
-                    <td className="py-4 px-6 text-[13px] text-lx-muted font-oxanium">{item.description}</td>
-                    <td className="py-4 px-6 text-[13px] font-semibold text-right text-lx-white font-oxanium">
-                      {formatCurrency(item.amount)}
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-lx-border">
+                    <th className="py-4 px-6 text-[10px] font-light tracking-[0.12em] text-lx-green uppercase">Date</th>
+                    <th className="py-4 px-6 text-[10px] font-light tracking-[0.12em] text-lx-green uppercase">Source Type</th>
+                    <th className="py-4 px-6 text-[10px] font-light tracking-[0.12em] text-lx-green uppercase">Detail Description</th>
+                    <th className="py-4 px-6 text-[10px] font-light tracking-[0.12em] text-lx-green uppercase text-right">Inflow</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {capital.map((item) => (
+                    <tr key={item.id} className="border-b border-lx-border/40 hover:bg-lx-surface-2 transition-colors">
+                      <td className="py-4 px-6 text-[13px] text-lx-muted font-oxanium">{formatDate(item.date)}</td>
+                      <td className="py-4 px-6 text-[13px] text-lx-white font-oxanium font-medium">{item.source}</td>
+                      <td className="py-4 px-6 text-[13px] text-lx-muted font-oxanium">{item.description}</td>
+                      <td className="py-4 px-6 text-[13px] font-semibold text-right text-lx-white font-oxanium">
+                        {formatCurrency(item.amount)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 
