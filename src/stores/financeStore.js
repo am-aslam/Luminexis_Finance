@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-const API_BASE = 'http://localhost:4000/api/v1';
+const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:4000/api/v1`;
 
 // Direct request wrapper sending Bearer Authorization and handling JSON
 const apiRequest = async (url, options = {}) => {
