@@ -353,10 +353,27 @@ export const useFinanceStore = create((set, get) => ({
       method: 'POST',
       body: JSON.stringify({
         date: new Date(inc.date).toISOString(),
-        category: inc.category,
+        category: inc.source || 'Gross Revenue',
         description: inc.description || 'N/A',
         totalAmount: Number(inc.amount),
         paymentMethod: mapPaymentMethodToDB(inc.paymentMethod),
+        status: 'COMPLETED'
+      })
+    });
+    await get().fetchIncome();
+    await get().fetchSummary();
+    await get().fetchLedger();
+  },
+
+  updateIncome: async (id, updated) => {
+    await apiRequest(`/income/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        date: updated.date ? new Date(updated.date).toISOString() : undefined,
+        category: updated.source,
+        description: updated.description,
+        totalAmount: updated.amount !== undefined ? Number(updated.amount) : undefined,
+        paymentMethod: updated.paymentMethod ? mapPaymentMethodToDB(updated.paymentMethod) : undefined,
         status: 'COMPLETED'
       })
     });
@@ -372,6 +389,44 @@ export const useFinanceStore = create((set, get) => ({
     await get().fetchIncome();
     await get().fetchSummary();
     await get().fetchLedger();
+  },
+
+  addLedgerEntry: async (entry) => {
+    await apiRequest('/ledger/bank', {
+      method: 'POST',
+      body: JSON.stringify({
+        date: new Date(entry.date).toISOString(),
+        description: entry.description,
+        debit: Number(entry.debit || 0),
+        credit: Number(entry.credit || 0),
+        type: 'MANUAL'
+      })
+    });
+    await get().fetchLedger();
+    await get().fetchSummary();
+  },
+
+  updateLedgerEntry: async (id, updated) => {
+    await apiRequest(`/ledger/bank/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        date: updated.date ? new Date(updated.date).toISOString() : undefined,
+        description: updated.description,
+        debit: updated.debit !== undefined ? Number(updated.debit) : undefined,
+        credit: updated.credit !== undefined ? Number(updated.credit) : undefined,
+        type: 'MANUAL'
+      })
+    });
+    await get().fetchLedger();
+    await get().fetchSummary();
+  },
+
+  deleteLedgerEntry: async (id) => {
+    await apiRequest(`/ledger/bank/${id}`, {
+      method: 'DELETE'
+    });
+    await get().fetchLedger();
+    await get().fetchSummary();
   },
 
   addCapital: async (cap) => {

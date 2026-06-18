@@ -8,6 +8,9 @@ const router = Router();
 router.use(authenticate);
 
 router.get('/bank', LedgerController.getBankLedger);
+router.post('/bank', LedgerController.createBankTransaction);
+router.patch('/bank/:id', LedgerController.updateBankTransaction);
+router.delete('/bank/:id', LedgerController.deleteBankTransaction);
 router.get('/bank/balance', LedgerController.getBankBalance);
 router.get('/me', LedgerController.getPersonalLedgerMe);
 router.get('/:userId', LedgerController.getPersonalLedgerUser);

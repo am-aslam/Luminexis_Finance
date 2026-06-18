@@ -1,7 +1,55 @@
 import { prisma } from '../../config/database.js';
 import { Prisma } from '@prisma/client';
+import { recalculateBalances } from '../../utils/bankSync.js';
 
 export class LedgerService {
+  static async createBankTransaction(data: any) {
+    const tx = await prisma.$transaction(async (txClient) => {
+      const created = await txClient.bankTransaction.create({
+        data: {
+          date: new Date(data.date),
+          type: data.type || 'MANUAL',
+          description: data.description,
+          debit: new Prisma.Decimal(data.debit || 0),
+          credit: new Prisma.Decimal(data.credit || 0),
+          balance: new Prisma.Decimal(0)
+        }
+      });
+      await recalculateBalances(txClient);
+      return created;
+    });
+    return tx;
+  }
+
+  static async updateBankTransaction(id: string, data: any) {
+    const tx = await prisma.$transaction(async (txClient) => {
+      const updated = await txClient.bankTransaction.update({
+        where: { id },
+        data: {
+          date: data.date ? new Date(data.date) : undefined,
+          description: data.description,
+          debit: data.debit !== undefined ? new Prisma.Decimal(data.debit) : undefined,
+          credit: data.credit !== undefined ? new Prisma.Decimal(data.credit) : undefined,
+          type: data.type
+        }
+      });
+      await recalculateBalances(txClient);
+      return updated;
+    });
+    return tx;
+  }
+
+  static async deleteBankTransaction(id: string) {
+    const tx = await prisma.$transaction(async (txClient) => {
+      const deleted = await txClient.bankTransaction.delete({
+        where: { id }
+      });
+      await recalculateBalances(txClient);
+      return deleted;
+    });
+    return tx;
+  }
+
   static async getBankLedger(page: number = 1, limit: number = 20) {
     const total = await prisma.bankTransaction.count();
     

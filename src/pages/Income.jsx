@@ -2,31 +2,51 @@ import React, { useState } from 'react';
 import { useFinanceStore } from '../stores/financeStore';
 import { formatCurrency } from '../utils/formatCurrency';
 import { formatDate } from '../utils/formatDate';
+import { Edit, Trash2 } from 'lucide-react';
 
 export const Income = () => {
-  const { income, addIncome, getTotalIncome } = useFinanceStore();
+  const { income, addIncome, updateIncome, deleteIncome, getTotalIncome } = useFinanceStore();
   const [source, setSource] = useState('');
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('Stripe Settlement');
+  const [editingIncome, setEditingIncome] = useState(null);
 
-  const handleSubmit = (e) => {
+  const handleStartEdit = (inc) => {
+    setEditingIncome(inc);
+    setSource(inc.source);
+    setDescription(inc.description);
+    setAmount(inc.amount.toString());
+    setPaymentMethod(inc.paymentMethod);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingIncome(null);
+    setSource('');
+    setDescription('');
+    setAmount('');
+    setPaymentMethod('Stripe Settlement');
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!source || !amount) return;
     
-    addIncome({
+    const payload = {
       source,
       description,
       amount: parseFloat(amount) || 0,
       paymentMethod,
-      date: new Date().toISOString().split('T')[0],
-      receivedBy: 'Aakesh',
-      status: 'Completed'
-    });
+      date: editingIncome ? editingIncome.date : new Date().toISOString().split('T')[0]
+    };
 
-    setSource('');
-    setDescription('');
-    setAmount('');
+    if (editingIncome) {
+      await updateIncome(editingIncome.id, payload);
+    } else {
+      await addIncome(payload);
+    }
+
+    handleCancelEdit();
   };
 
   return (
@@ -68,6 +88,7 @@ export const Income = () => {
                     <th className="py-4 px-6 text-[10px] font-light tracking-[0.12em] text-lx-green uppercase">Source</th>
                     <th className="py-4 px-6 text-[10px] font-light tracking-[0.12em] text-lx-green uppercase">Method</th>
                     <th className="py-4 px-6 text-[10px] font-light tracking-[0.12em] text-lx-green uppercase text-right">Amount</th>
+                    <th className="py-4 px-6 text-[10px] font-light tracking-[0.12em] text-lx-green uppercase text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -81,6 +102,28 @@ export const Income = () => {
                       <td className="py-4 px-6 text-[13px] font-semibold text-right text-lx-green-glow font-oxanium">
                         {formatCurrency(inc.amount)}
                       </td>
+                      <td className="py-4 px-6 text-[13px] font-oxanium text-center">
+                        <div className="inline-flex items-center gap-4">
+                          <button 
+                            onClick={() => handleStartEdit(inc)}
+                            className="text-lx-muted hover:text-lx-white transition-colors p-1"
+                            title="Edit Income"
+                          >
+                            <Edit size={14} />
+                          </button>
+                          <button 
+                            onClick={() => {
+                              if (confirm('Are you sure you want to delete this income record?')) {
+                                deleteIncome(inc.id);
+                              }
+                            }}
+                            className="text-lx-muted hover:text-lx-red transition-colors p-1"
+                            title="Delete Income"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -92,7 +135,7 @@ export const Income = () => {
         {/* Right Column: Log New Revenue Payment */}
         <div className="space-y-6 bg-lx-surface border border-lx-border rounded-[8px] p-6 h-fit">
           <span className="editorial-label block tracking-[0.2em] font-light text-[10px] select-none">
-            Log Revenue
+            {editingIncome ? 'Edit Revenue' : 'Log Revenue'}
           </span>
           
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -153,12 +196,23 @@ export const Income = () => {
               </select>
             </div>
 
-            <button 
-              type="submit"
-              className="w-full font-oxanium text-[12px] font-semibold text-lx-white bg-lx-green hover:bg-lx-green-mid rounded-[4px] py-3 shadow-md transition-colors active:scale-[0.98] mt-2"
-            >
-              Record Settlement
-            </button>
+            <div className="flex items-center gap-3 pt-2">
+              {editingIncome && (
+                <button 
+                  type="button"
+                  onClick={handleCancelEdit}
+                  className="flex-1 font-oxanium text-[12px] font-semibold text-lx-muted border border-lx-border hover:text-lx-white hover:bg-lx-surface-2 rounded-[4px] py-3 transition-colors active:scale-[0.98]"
+                >
+                  Cancel
+                </button>
+              )}
+              <button 
+                type="submit"
+                className="flex-1 font-oxanium text-[12px] font-semibold text-lx-white bg-lx-green hover:bg-lx-green-mid rounded-[4px] py-3 shadow-md transition-colors active:scale-[0.98]"
+              >
+                {editingIncome ? 'Save Settlement' : 'Record Settlement'}
+              </button>
+            </div>
           </form>
         </div>
       </div>
