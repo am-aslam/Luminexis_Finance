@@ -1,5 +1,5 @@
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -21,65 +21,65 @@ model User {
 }
 
 model Expense {
-  id            String        @id @default(cuid())
+  id            String   @id @default(cuid())
   date          DateTime
   category      String
   vendorId      String?
-  vendor        Vendor?       @relation(fields: [vendorId], references: [id])
+  vendor        Vendor?  @relation(fields: [vendorId], references: [id])
   description   String
-  baseAmount    Decimal
-  gstPercent    Decimal       @default(0)
-  gstAmount     Decimal       // computed on save
-  totalAmount   Decimal       // computed on save
-  paymentMethod String        // UPI, BANK_TRANSFER, CASH, CARD
-  status        String        @default("PAID") // PAID, PENDING, FAILED, COMPLETED
+  baseAmount    Decimal  @db.Decimal(18, 2)
+  gstPercent    Decimal  @default(0) @db.Decimal(5, 2)
+  gstAmount     Decimal  @db.Decimal(18, 2)
+  totalAmount   Decimal  @db.Decimal(18, 2)
+  paymentMethod String   // UPI, BANK_TRANSFER, CASH, CARD
+  status        String   @default("PAID") // PAID, PENDING, FAILED, COMPLETED
   paidById      String
-  paidBy        User          @relation(fields: [paidById], references: [id])
+  paidBy        User     @relation(fields: [paidById], references: [id])
   notes         String?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
   deletedAt     DateTime?
 }
 
 model Income {
-  id            String        @id @default(cuid())
+  id            String   @id @default(cuid())
   date          DateTime
   category      String
   description   String
-  totalAmount   Decimal
-  paymentMethod String        // UPI, BANK_TRANSFER, CASH, CARD
-  status        String        @default("COMPLETED")
+  totalAmount   Decimal  @db.Decimal(18, 2)
+  paymentMethod String   // UPI, BANK_TRANSFER, CASH, CARD
+  status        String   @default("COMPLETED")
   paidById      String
-  paidBy        User          @relation(fields: [paidById], references: [id])
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  paidBy        User     @relation(fields: [paidById], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
   deletedAt     DateTime?
 }
 
 model CapitalContribution {
-  id            String        @id @default(cuid())
+  id            String   @id @default(cuid())
   date          DateTime
   contributorId String
-  contributor   User          @relation(fields: [contributorId], references: [id])
+  contributor   User     @relation(fields: [contributorId], references: [id])
   description   String
-  amount        Decimal
-  paymentMethod String        // UPI, BANK_TRANSFER, CASH, CARD
-  createdAt     DateTime      @default(now())
+  amount        Decimal  @db.Decimal(18, 2)
+  paymentMethod String   // UPI, BANK_TRANSFER, CASH, CARD
+  createdAt     DateTime @default(now())
   deletedAt     DateTime?
 }
 
 model BankTransaction {
-  id               String          @id @default(cuid())
+  id               String   @id @default(cuid())
   date             DateTime
-  type             String          // CAPITAL, EXPENSE, INCOME, TRANSFER
+  type             String   // CAPITAL, EXPENSE, INCOME, TRANSFER
   reference        String?
   description      String
-  debit            Decimal         @default(0)
-  credit           Decimal         @default(0)
-  balance          Decimal         // running balance
+  debit            Decimal  @default(0) @db.Decimal(18, 2)
+  credit           Decimal  @default(0) @db.Decimal(18, 2)
+  balance          Decimal  @db.Decimal(18, 2)
   relatedExpenseId String?
   relatedIncomeId  String?
-  createdAt        DateTime        @default(now())
+  createdAt        DateTime @default(now())
 }
 
 model Vendor {
@@ -96,9 +96,9 @@ model Vendor {
 }
 
 model Category {
-  id    String       @id @default(cuid())
-  name  String       @unique
-  type  String       // EXPENSE, INCOME
+  id   String @id @default(cuid())
+  name String @unique
+  type String // EXPENSE, INCOME
 }
 
 model Invitation {

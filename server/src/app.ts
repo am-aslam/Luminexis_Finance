@@ -1,9 +1,11 @@
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
+import compression from 'compression';
 import { rateLimiter } from './middleware/rateLimiter.js';
 import { requestLogger } from './middleware/requestLogger.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { env } from './config/env.js';
 
 // Route Imports
 import authRoutes from './modules/auth/auth.routes.js';
@@ -20,16 +22,40 @@ import { prisma } from './config/database.js';
 
 const app = express();
 
-// Security Middlewares
-app.use(helmet());
-app.use(cors({
-  origin: true,
-  credentials: true
+// Trust Render / Vercel / Cloudflare reverse proxies
+app.set('trust proxy', 1);
+
+// Security Headers
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));
 
+// CORS — only allow the configured frontend origin
+const allowedOrigins = [
+  env.CLIENT_URL,
+  env.FRONTEND_URL,
+  'http://localhost:5173',
+  'http://localhost:3000',
+].filter(Boolean) as string[];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (server-to-server, curl, Postman)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    callback(new Error(`CORS: Origin '${origin}' not permitted`));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+
+// Gzip compression
+app.use(compression());
+
 // Body Parsers
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Global Request Logger
 app.use(requestLogger);
@@ -37,7 +63,18 @@ app.use(requestLogger);
 // Global Rate Limiter
 app.use(rateLimiter);
 
-// API v1 Routes
+// ─── Health Check ──────────────────────────────────────────────────────────────
+// Used by Render to verify the server is alive after deployment
+app.get('/health', (_req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    uptime: Math.floor(process.uptime()),
+    environment: env.NODE_ENV,
+  });
+});
+
+// ─── API v1 Routes ─────────────────────────────────────────────────────────────
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/expenses', expensesRoutes);
 app.use('/api/v1/income', incomeRoutes);
@@ -49,10 +86,10 @@ app.use('/api/v1/categories', categoriesRoutes);
 app.use('/api/v1/reports', reportsRoutes);
 app.use('/api/v1/invitations', invitationsRoutes);
 
-// Developer debug endpoint to reset database tables
+// ─── Developer Debug Reset (disabled in production) ───────────────────────────
 app.post('/api/v1/debug/reset', async (req, res, next) => {
   try {
-    if (process.env.NODE_ENV === 'production') {
+    if (env.NODE_ENV === 'production') {
       return res.status(403).json({
         success: false,
         error: { code: 'FORBIDDEN', message: 'Database reset is disabled in production.' }
@@ -76,18 +113,18 @@ app.post('/api/v1/debug/reset', async (req, res, next) => {
   }
 });
 
-// Fallback for unhandled routes
-app.use((req, res, next) => {
+// ─── 404 Fallback ──────────────────────────────────────────────────────────────
+app.use((req, res) => {
   res.status(404).json({
     success: false,
     error: {
       code: 'NOT_FOUND',
-      message: `Cannot ${req.method} ${req.originalUrl}`
+      message: `Cannot ${req.method} ${req.originalUrl}`,
     }
   });
 });
 
-// Global Error Handler
+// ─── Global Error Handler ──────────────────────────────────────────────────────
 app.use(errorHandler);
 
 export default app;
