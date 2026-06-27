@@ -1,21 +1,20 @@
 import { create } from 'zustand';
 
 // ─── API Base URL ──────────────────────────────────────────────────────────────
-// In production (Vercel), VITE_API_URL must be set in:
-//   Vercel Dashboard → Project Settings → Environment Variables
-// In local development, it reads from .env (VITE_API_URL=http://localhost:4000/api/v1)
+// VITE_API_URL must be set in Vercel Dashboard → Project Settings → Environment Variables
+// Local dev: set in .env file as VITE_API_URL=http://localhost:4000/api/v1
 const _configuredUrl = import.meta.env.VITE_API_URL;
 
 if (!_configuredUrl && import.meta.env.PROD) {
-  // Hard fail in production builds so the error is obvious
-  throw new Error(
-    '[Luminexis] VITE_API_URL is not configured. ' +
-    'Set it in Vercel Dashboard → Project Settings → Environment Variables ' +
-    'and redeploy. Example: https://your-render-service.onrender.com/api/v1'
+  console.error(
+    '[Luminexis] ⚠️ VITE_API_URL is not set!\n' +
+    'Go to Vercel Dashboard → Project Settings → Environment Variables\n' +
+    'Add: VITE_API_URL = https://your-render-service.onrender.com/api/v1\n' +
+    'Then redeploy the project.'
   );
 }
 
-const API_BASE = _configuredUrl || `http://localhost:4000/api/v1`;
+const API_BASE = _configuredUrl || '';
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
