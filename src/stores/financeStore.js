@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:4000/api/v1`;
+const API_BASE = import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.hostname}:4000/api/v1`;
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
