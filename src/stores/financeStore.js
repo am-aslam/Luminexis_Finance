@@ -2,6 +2,92 @@ import { create } from 'zustand';
 
 const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:4000/api/v1`;
 
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Retry function with exponential backoff
+const fetchWithRetry = async (url, options = {}, retries = 3, initialDelay = 1000) => {
+  let delay = initialDelay;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+      
+      const res = await fetch(url, { ...options, signal: controller.signal });
+      clearTimeout(timeoutId);
+      return res;
+    } catch (err) {
+      if (attempt === retries) {
+        throw err;
+      }
+      console.warn(`[Network] Attempt ${attempt + 1} failed for ${url}. Retrying in ${delay}ms... Error:`, err);
+      await wait(delay);
+      delay *= 2; // exponential backoff
+    }
+  }
+};
+
+// Help diagnose the specific network issue
+// Help diagnose the specific network issue
+const diagnoseNetworkError = async (url, error, options = {}) => {
+  let category;
+  let message;
+  
+  const parsedUrl = new URL(url, window.location.origin);
+  const isHttps = parsedUrl.protocol === 'https:';
+  const isCurrentHttps = window.location.protocol === 'https:';
+
+  if (!navigator.onLine) {
+    category = 'Offline';
+    message = 'Unable to connect. Your device appears to be offline. Please verify your internet connection.';
+  } else if (isCurrentHttps && !isHttps) {
+    category = 'Mixed HTTP/HTTPS Content';
+    message = `Security Block: Mixed Content. The frontend is served securely over HTTPS, but the API URL '${url}' is configured as insecure HTTP. Browsers block insecure requests in secure contexts.`;
+  } else if (error.name === 'AbortError') {
+    category = 'Timeout';
+    message = 'Request timed out. The Luminexis server took too long to respond. Please try again.';
+  } else {
+    try {
+      const controller = new AbortController();
+      const tId = setTimeout(() => controller.abort(), 2000);
+      await fetch(parsedUrl.origin, { mode: 'no-cors', signal: controller.signal });
+      clearTimeout(tId);
+      
+      category = 'CORS / Route Inaccessible';
+      message = `Connection established to server host but the endpoint '${parsedUrl.pathname}' was blocked or is incorrect. This might be due to a CORS configuration mismatch or an invalid API route.`;
+    } catch {
+      category = 'Server Offline';
+      if (!import.meta.env.VITE_API_URL) {
+        message = `Unable to connect to Luminexis servers at ${parsedUrl.host}. The server might be offline, or VITE_API_URL environment variable is missing/incorrect.`;
+      } else {
+        message = `Unable to connect to Luminexis servers at ${parsedUrl.host}. The server is offline or unavailable.`;
+      }
+    }
+  }
+
+  // Developer diagnostics print to the browser console
+  console.group('%cDeveloper Diagnostics - Network Failure', 'color: #E53E3E; font-weight: bold; font-size: 12px;');
+  console.error(`Root Cause Category: ${category}`);
+  console.error(`Request URL: ${url}`);
+  console.error(`Request Method: ${options.method || 'GET'}`);
+  if (options.body) {
+    try {
+      const parsed = JSON.parse(options.body);
+      if (parsed.password) parsed.password = '••••••••';
+      console.error('Request Payload:', parsed);
+    } catch {
+      console.error('Request Payload:', options.body);
+    }
+  }
+  console.error('Original Error:', error);
+  console.error('Call Stack:', error.stack || new Error().stack);
+  console.groupEnd();
+
+  const errObj = new Error(message);
+  errObj.category = category;
+  errObj.originalError = error;
+  return errObj;
+};
+
 // Direct request wrapper sending Bearer Authorization and handling JSON
 const apiRequest = async (url, options = {}) => {
   const token = localStorage.getItem('accessToken');
@@ -11,22 +97,26 @@ const apiRequest = async (url, options = {}) => {
     ...options.headers
   };
   
-  const res = await fetch(`${API_BASE}${url}`, {
-    ...options,
-    headers
-  });
+  let res;
+  const fullUrl = `${API_BASE}${url}`;
+  try {
+    res = await fetchWithRetry(fullUrl, { ...options, headers });
+  } catch (networkError) {
+    const diagnosed = await diagnoseNetworkError(fullUrl, networkError, options);
+    throw new Error(diagnosed.message, { cause: networkError });
+  }
 
   if (res.status === 401) {
     // Attempt Token Refresh (calling refresh route)
     try {
-      const refreshRes = await fetch(`${API_BASE}/auth/refresh`, { method: 'POST' });
+      const refreshRes = await fetchWithRetry(`${API_BASE}/auth/refresh`, { method: 'POST' });
       if (refreshRes.ok) {
         const refreshJson = await refreshRes.json();
         const newToken = refreshJson.data.accessToken;
         localStorage.setItem('accessToken', newToken);
         headers['Authorization'] = `Bearer ${newToken}`;
         // Re-attempt request
-        const retryRes = await fetch(`${API_BASE}${url}`, { ...options, headers });
+        const retryRes = await fetchWithRetry(`${API_BASE}${url}`, { ...options, headers });
         if (retryRes.ok) return await retryRes.json();
       }
     } catch (err) {
@@ -40,9 +130,16 @@ const apiRequest = async (url, options = {}) => {
     throw new Error('Unauthorized');
   }
 
-  const json = await res.json();
+  let json;
+  try {
+    json = await res.json();
+  } catch (parseError) {
+    console.error('JSON parsing failed:', parseError);
+    throw new Error('Server returned an unreadable response. This may indicate a server crash or database connection failure.', { cause: parseError });
+  }
+
   if (!res.ok) {
-    throw new Error(json.error?.message || 'API request failed');
+    throw new Error(json.message || json.error?.message || 'API request failed');
   }
   return json;
 };
@@ -99,46 +196,143 @@ export const useFinanceStore = create((set, get) => ({
     try {
       const profile = await apiRequest('/auth/me');
       set({ user: profile.data, isAuthenticated: true, isInitialized: true });
-    } catch (err) {
+    } catch {
       localStorage.removeItem('accessToken');
       set({ user: null, isAuthenticated: false, isInitialized: true });
     }
   },
 
   login: async (email, password) => {
-    const res = await fetch(`${API_BASE}/auth/login`, {
+    const url = `${API_BASE}/auth/login`;
+    const options = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
-    });
-    const json = await res.json();
+    };
+    let res;
+    try {
+      res = await fetchWithRetry(url, options);
+    } catch (networkError) {
+      const diagnosed = await diagnoseNetworkError(url, networkError, options);
+      throw new Error(diagnosed.message, { cause: networkError });
+    }
+
+    let json;
+    try {
+      json = await res.json();
+    } catch (parseError) {
+      throw new Error('Server returned an unreadable response.', { cause: parseError });
+    }
+
     if (!res.ok) {
-      throw new Error(json.error?.message || 'Login failed');
+      throw new Error(json.message || json.error?.message || 'Login failed');
     }
     localStorage.setItem('accessToken', json.data.accessToken);
     set({ user: json.data.user, isAuthenticated: true });
   },
 
   signup: async (userData) => {
-    const res = await fetch(`${API_BASE}/auth/signup`, {
+    const url = `${API_BASE}/auth/signup`;
+    const options = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(userData)
-    });
-    const json = await res.json();
-    if (!res.ok) {
-      throw new Error(json.error?.message || 'Signup failed');
+    };
+    let res;
+    try {
+      res = await fetchWithRetry(url, options);
+    } catch (networkError) {
+      const diagnosed = await diagnoseNetworkError(url, networkError, options);
+      throw new Error(diagnosed.message, { cause: networkError });
     }
+
+    let json;
+    try {
+      json = await res.json();
+    } catch (parseError) {
+      throw new Error('Server returned an unreadable response. This may indicate a server crash or database connection failure.', { cause: parseError });
+    }
+
+    if (!res.ok) {
+      const errMsg = json.message || json.error?.message || 'Signup failed';
+      const apiError = new Error(errMsg);
+      apiError.status = res.status;
+      
+      console.group('%cDeveloper Diagnostics - API Error Response', 'color: #D97706; font-weight: bold;');
+      console.error(`Request URL: ${url}`);
+      console.error(`Response Status: ${res.status}`);
+      console.error('Response Body:', json);
+      console.groupEnd();
+      
+      throw apiError;
+    }
+
     localStorage.setItem('accessToken', json.data.accessToken);
     set({ user: json.data.user, isAuthenticated: true });
   },
 
   logout: async () => {
     try {
-      await fetch(`${API_BASE}/auth/logout`, { method: 'POST' });
-    } catch (e) {}
+      await fetchWithRetry(`${API_BASE}/auth/logout`, { method: 'POST' });
+    } catch {
+      // Clear token locally anyway
+      localStorage.removeItem('accessToken');
+    }
     localStorage.removeItem('accessToken');
     set({ user: null, isAuthenticated: false });
+  },
+
+  // Reset database (dev only) — wipes all tables so a fresh Founder can register
+  resetDatabase: async () => {
+    const url = `${API_BASE}/debug/reset`;
+    const options = { method: 'POST', headers: { 'Content-Type': 'application/json' } };
+    let res;
+    try {
+      res = await fetchWithRetry(url, options);
+    } catch (networkError) {
+      const diagnosed = await diagnoseNetworkError(url, networkError, options);
+      throw new Error(diagnosed.message, { cause: networkError });
+    }
+
+    let json;
+    try {
+      json = await res.json();
+    } catch {
+      throw new Error('Server returned an unreadable response.');
+    }
+
+    if (!res.ok) {
+      throw new Error(json.message || json.error?.message || 'Database reset failed');
+    }
+
+    // Clear local auth state after wipe
+    localStorage.removeItem('accessToken');
+    set({ user: null, isAuthenticated: false });
+    return json;
+  },
+
+  // Verify an invitation token to get invite details (email, role)
+  verifyInviteToken: async (token) => {
+    const url = `${API_BASE}/invitations/token/${encodeURIComponent(token)}`;
+    let res;
+    try {
+      res = await fetchWithRetry(url);
+    } catch (networkError) {
+      const diagnosed = await diagnoseNetworkError(url, networkError);
+      throw new Error(diagnosed.message, { cause: networkError });
+    }
+
+    let json;
+    try {
+      json = await res.json();
+    } catch {
+      throw new Error('Server returned an unreadable response.');
+    }
+
+    if (!res.ok) {
+      throw new Error(json.message || json.error?.message || 'Invalid or expired invitation link.');
+    }
+    return json.data;
   },
 
   // Fetch Data Actions
@@ -487,16 +681,48 @@ export const useFinanceStore = create((set, get) => ({
   },
 
   verifyInviteToken: async (token) => {
-    const res = await fetch(`${API_BASE}/invitations/token/${token}`);
-    const json = await res.json();
+    const url = `${API_BASE}/invitations/token/${token}`;
+    let res;
+    try {
+      res = await fetchWithRetry(url);
+    } catch (networkError) {
+      const diagnosed = await diagnoseNetworkError(url, networkError);
+      throw new Error(diagnosed.message, { cause: networkError });
+    }
+
+    let json;
+    try {
+      json = await res.json();
+    } catch (parseError) {
+      throw new Error('Server returned an unreadable response.', { cause: parseError });
+    }
+
     if (!res.ok) {
-      throw new Error(json.error?.message || 'Invalid token');
+      throw new Error(json.message || json.error?.message || 'Invalid token');
     }
     return json.data;
   },
 
   resetDatabase: async () => {
-    await fetch(`${API_BASE}/debug/reset`, { method: 'POST' });
+    const url = `${API_BASE}/debug/reset`;
+    let res;
+    try {
+      res = await fetchWithRetry(url, { method: 'POST' });
+    } catch (networkError) {
+      const diagnosed = await diagnoseNetworkError(url, networkError, { method: 'POST' });
+      throw new Error(diagnosed.message, { cause: networkError });
+    }
+
+    if (!res.ok) {
+      let json = null;
+      try {
+        const parsed = await res.json();
+        json = parsed;
+      } catch {
+        console.warn('Could not parse database reset error JSON.');
+      }
+      throw new Error(json?.message || json?.error?.message || 'Failed to reset database');
+    }
     localStorage.removeItem('accessToken');
     set({ user: null, isAuthenticated: false });
   },
