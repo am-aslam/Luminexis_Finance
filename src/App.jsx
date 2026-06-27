@@ -17,40 +17,6 @@ import { FounderLedger } from './pages/FounderLedger';
 import { Login } from './pages/Login';
 import { Signup } from './pages/Signup';
 
-// ─── API Not Configured Screen ────────────────────────────────────────────────
-// Shows when VITE_API_URL is missing in Vercel environment variables.
-const ApiNotConfigured = () => (
-  <div className="min-h-screen bg-lx-black flex flex-col items-center justify-center p-8 gap-6 text-center select-none">
-    <div className="text-5xl">⚙️</div>
-    <div className="space-y-2">
-      <h1 className="font-oxanium text-xl font-bold text-amber-400 uppercase tracking-wider">
-        Backend Not Configured
-      </h1>
-      <p className="font-oxanium text-sm text-lx-muted max-w-md leading-relaxed">
-        The API server URL is not set. The application cannot connect to the backend.
-      </p>
-    </div>
-    <div className="bg-[#111] border border-amber-700/60 rounded-lg p-5 max-w-lg text-left space-y-3">
-      <p className="font-oxanium text-xs font-semibold text-amber-400 uppercase tracking-wider">
-        Fix: Set VITE_API_URL in Vercel
-      </p>
-      <ol className="font-oxanium text-xs text-lx-muted space-y-1.5 leading-relaxed list-decimal list-inside">
-        <li>Go to <span className="text-white">Vercel Dashboard → Your Project → Settings</span></li>
-        <li>Click <span className="text-white">Environment Variables</span></li>
-        <li>Add: <code className="bg-black text-green-400 px-1.5 py-0.5 rounded text-[11px]">VITE_API_URL</code> = your Render backend URL</li>
-        <li>Click <span className="text-white">Redeploy</span></li>
-      </ol>
-      <p className="font-oxanium text-[11px] text-lx-muted pt-1">
-        Example value:{' '}
-        <code className="bg-black text-green-400 px-1.5 py-0.5 rounded text-[11px]">
-          https://luminexis-api.onrender.com/api/v1
-        </code>
-      </p>
-    </div>
-  </div>
-);
-
-
 function App() {
 
   const {
@@ -127,10 +93,6 @@ function App() {
     navigate('/income');
   };
 
-  // Show setup screen if VITE_API_URL is not configured in production
-  if (import.meta.env.PROD && !import.meta.env.VITE_API_URL) {
-    return <ApiNotConfigured />;
-  }
 
   // Wait for checkAuth loading state to prevent flash of login screen
   if (!isInitialized) {
